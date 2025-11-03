@@ -57,6 +57,9 @@
 	import { rootInDarkMode } from "@/utils/domElement";
 
 	class ThemeToggle extends HTMLElement {
+		private lastClickTime = 0;
+		private clickTimeout: ReturnType<typeof setTimeout> | null = null;
+
 		constructor() {
 			super();
 			const button = this.querySelector<HTMLButtonElement>("button");
@@ -65,24 +68,60 @@
 				// set aria role value
 				button.setAttribute("role", "switch");
 				button.setAttribute("aria-checked", String(rootInDarkMode()));
+				button.setAttribute(
+					"title",
+					"Toggle theme (double-click to reset to auto time-based)",
+				);
 
-				// button event
+				// button event - handle single and double click
 				button.addEventListener("click", () => {
-					// invert theme
-					let themeChangeEvent = new CustomEvent("theme-change", {
-						detail: {
-							theme: rootInDarkMode() ? "light" : "dark",
-						},
-					});
-					// dispatch event -> ThemeProvider.astro
-					document.dispatchEvent(themeChangeEvent);
+					const now = Date.now();
+					const timeSinceLastClick = now - this.lastClickTime;
 
-					// set the aria-checked attribute
-					button.setAttribute("aria-checked", String(rootInDarkMode()));
+					// Double-click detected (within 300ms)
+					if (timeSinceLastClick < 300) {
+						if (this.clickTimeout) {
+							clearTimeout(this.clickTimeout);
+							this.clickTimeout = null;
+						}
+						this.handleDoubleClick();
+					} else {
+						// Wait to see if this is a double-click
+						this.clickTimeout = setTimeout(() => {
+							this.handleSingleClick(button);
+							this.clickTimeout = null;
+						}, 300);
+					}
+
+					this.lastClickTime = now;
 				});
 			} else {
 				console.warn("Theme Toggle: No button found");
 			}
+		}
+
+		private handleSingleClick(button: HTMLButtonElement) {
+			// invert theme (manual override)
+			let themeChangeEvent = new CustomEvent("theme-change", {
+				detail: {
+					theme: rootInDarkMode() ? "light" : "dark",
+				},
+			});
+			// dispatch event -> ThemeProvider.astro
+			document.dispatchEvent(themeChangeEvent);
+
+			// set the aria-checked attribute
+			button.setAttribute("aria-checked", String(rootInDarkMode()));
+		}
+
+		private handleDoubleClick() {
+			// Clear manual override - reset to auto time-based theme
+			if (typeof localStorage !== "undefined") {
+				localStorage.removeItem("theme");
+			}
+
+			// Reload to apply time-based theme
+			window.location.reload();
 		}
 	}
 

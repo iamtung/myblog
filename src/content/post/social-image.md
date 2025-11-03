@@ -1,9 +1,12 @@
 ---
 title: "Example OG Social Image"
-publishDate: "27 January 2023"
 description: "An example post for Astro Cactus, detailing how to add a custom social image card in the frontmatter"
-tags: ["example", "blog", "image"]
-ogImage: "/social-card.png"
+ogImage: /social-card.png
+tags:
+  - example
+  - blog
+  - image
+publishDate: "27 January 2023"
 ---
 
 ## Adding your own social image to a post
@@ -16,6 +19,9 @@ If you open this markdown file `src/content/post/social-image.md` you'll see the
 ```yaml
 ogImage: "/social-card.png"
 ```
+
+## No way
+# Why alway me
 
 You can view the one set for this template page [here](https://astro-cactus.chriswilliams.dev/social-card.png).
 

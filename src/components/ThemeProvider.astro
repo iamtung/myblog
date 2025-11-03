@@ -1,10 +1,19 @@
 {/* Inlined to avoid FOUC. This is a parser blocking script. */}
 <script is:inline>
-	const lightModePref = window.matchMedia("(prefers-color-scheme: light)");
+	// Time-based theme configuration
+	const LIGHT_THEME_START_HOUR = 7; // 7 AM
+	const LIGHT_THEME_END_HOUR = 19; // 7 PM
+
+	function getTimeBasedTheme() {
+		const hour = new Date().getHours();
+		return hour >= LIGHT_THEME_START_HOUR && hour < LIGHT_THEME_END_HOUR ? "light" : "dark";
+	}
 
 	function getUserPref() {
 		const storedTheme = typeof localStorage !== "undefined" && localStorage.getItem("theme");
-		return storedTheme || (lightModePref.matches ? "light" : "dark");
+		// If user has manually set a theme, use that (manual override)
+		// Otherwise, use time-based theme
+		return storedTheme || getTimeBasedTheme();
 	}
 
 	function setTheme(newTheme) {
@@ -23,9 +32,8 @@
 
 		root.setAttribute("data-theme", newTheme);
 
-		if (typeof localStorage !== "undefined") {
-			localStorage.setItem("theme", newTheme);
-		}
+		// Only save to localStorage when user manually changes theme
+		// This allows the manual override to persist
 	}
 
 	// initial setup
@@ -36,9 +44,20 @@
 
 	// listen for theme-change custom event, fired in src/components/ThemeToggle.astro
 	document.addEventListener("theme-change", (e) => {
-		setTheme(e.detail.theme);
+		const newTheme = e.detail.theme;
+		setTheme(newTheme);
+		// Save manual override to localStorage
+		if (typeof localStorage !== "undefined") {
+			localStorage.setItem("theme", newTheme);
+		}
 	});
 
-	// listen for prefers-color-scheme change.
-	lightModePref.addEventListener("change", (e) => setTheme(e.matches ? "light" : "dark"));
+	// Check time every minute to automatically update theme if no manual override
+	setInterval(() => {
+		const storedTheme = typeof localStorage !== "undefined" && localStorage.getItem("theme");
+		if (!storedTheme) {
+			// No manual override, update based on time
+			setTheme(getTimeBasedTheme());
+		}
+	}, 60000); // Check every minute
 </script>
